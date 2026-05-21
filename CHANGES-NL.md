@@ -147,19 +147,30 @@ chain de respons niet meer en wordt `authorized` nooit gefired → time-out.
 
 ## Test-procedure
 
-```powershell
-# 1. Installeer de gepatchte plugin in je Node-RED user dir
-cd $env:USERPROFILE\.node-red
-npm install C:\Users\johan\Documents\python\loxone-websockettest\node-red-contrib-loxone
+Installeer de plugin direct vanaf deze fork:
 
-# 2. Restart Node-RED en bekijk de log
-# Verwacht: "Miniserver connected (...) using Token-Enc"
-#           "got structure file <timestamp>"
+```bash
+cd ~/.node-red                                    # of $env:USERPROFILE\.node-red op Windows
+npm install github:iot-experimenter/node-red-contrib-loxone
 ```
 
+Herstart Node-RED. Verwacht in de log:
+
+- `Miniserver connected (...) using Token-Enc`
+- `got structure file <timestamp>`
+
 Loopt het mis met `auth_failed`, vergelijk dan de hash uit de JS-log met
-de hash die `loxone_ws_auth_test4.py` op dezelfde miniserver berekent —
-die moeten nu identiek zijn.
+de hash die [`testscripts/loxone_ws_auth_test4.py`](./testscripts/loxone_ws_auth_test4.py)
+op dezelfde miniserver berekent — die moeten identiek zijn.
+
+Het Python-script is een directe poort van PyLoxone's `connection.py` en
+werkt aantoonbaar tegen FW 14.x. Vul `HOST`, `USERNAME`, `PASSWORD`
+bovenaan in en draai:
+
+```bash
+pip install aiohttp websockets pycryptodome
+python testscripts/loxone_ws_auth_test4.py
+```
 
 ---
 
