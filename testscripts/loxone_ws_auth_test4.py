@@ -1,7 +1,34 @@
 """
-Loxone Gen2 authentication test — PyLoxone-master 1:1 replica + diagnostiek.
+Loxone Gen2 authentication test — PyLoxone 1:1 replica + diagnostiek.
 
-OVER-DE-DRAAD-GEDRAG (identiek aan PyLoxone-master/connection.py):
+============================================================================
+ATTRIBUTION
+============================================================================
+This script is a derivative work based on:
+
+    PyLoxone by Jo Dehli — https://github.com/JoDehli/PyLoxone
+    (specifically custom_components/loxone/pyloxone_api/connection.py)
+    Licensed under the Apache License, Version 2.0.
+    See ./LICENSE-PyLoxone or http://www.apache.org/licenses/LICENSE-2.0
+
+It ports the PyLoxone connection/authentication flow to a standalone
+program for diagnosing `auth_failed` against Loxone Miniservers running
+firmware >= 10.2. The on-the-wire behaviour is intentionally identical
+to PyLoxone so the hashes/HMACs computed here can be compared against
+the JavaScript implementation in node-lox-ws-api.
+
+Modifications from upstream (per Apache 2.0 §4(b)):
+  - Removed Home Assistant integration plumbing; single-shot CLI run only.
+  - Added hash-comparison diagnostic output (raw vs hex-decoded salts).
+  - Hard stop on HTTP 401 to avoid miniserver IP-block during testing.
+  - Configurable WS subprotocol (defaults to 'remotecontrol').
+
+Big thanks to Jo Dehli and the PyLoxone contributors — without their
+working reference implementation, fixing the node-lox-ws-api auth issues
+on modern firmware would have been considerably harder.
+============================================================================
+
+OVER-DE-DRAAD-GEDRAG (identiek aan PyLoxone/connection.py):
 
   1. HTTP GET /jdev/cfg/apiKey       (BasicAuth)
   2. HTTP GET /jdev/sys/getPublicKey (BasicAuth)  ->  CERT-tags vervangen door

@@ -26,12 +26,26 @@ Na `npm install` in `node-red-contrib-loxone/` (of een symlink in
 
 ---
 
-## Referentie-implementatie
+## Referentie-implementatie + credits
 
-De fixes zijn 1-op-1 afgeleid van `testscripts/loxone_ws_auth_test4.py`, dat
-een directe poort is van [PyLoxone-master](https://github.com/JoDehli/PyLoxone)
-`connection.py` (regelnummers staan in de Python-broncode bij iedere stap).
-Die Python-flow werkt aantoonbaar wél tegen onze miniserver (192.168.1.27, FW 14.x).
+De fixes zijn 1-op-1 afgeleid van [`testscripts/loxone_ws_auth_test4.py`](./testscripts/loxone_ws_auth_test4.py),
+dat een directe poort is van **[PyLoxone](https://github.com/JoDehli/PyLoxone)** door
+[Jo Dehli](https://github.com/JoDehli) — specifiek
+`custom_components/loxone/pyloxone_api/connection.py`. Regelnummers staan
+in de Python-broncode bij iedere stap, zodat je kan terugkijken naar de
+originele PyLoxone-implementatie.
+
+Die Python-flow werkt aantoonbaar tegen Loxone Miniservers met firmware
+≥ 10.2 (getest op FW 14.x). Zonder die werkende referentie-implementatie
+was het lokaliseren van de drie node-lox-ws-api bugs aanzienlijk lastiger
+geweest — dank aan Jo Dehli en de PyLoxone-contributors.
+
+PyLoxone is gelicenseerd onder de **Apache License 2.0**. Het gebruikte
+script in `testscripts/` blijft een Apache-2.0-derivaat (zie
+[`testscripts/LICENSE-PyLoxone`](./testscripts/LICENSE-PyLoxone)) en
+vermeldt de wijzigingen t.o.v. upstream in zijn header. De rest van deze
+plugin (node-red-contrib-loxone zelf en de vendored node-lox-ws-api)
+blijft MIT zoals codmpm's origineel.
 
 ---
 
