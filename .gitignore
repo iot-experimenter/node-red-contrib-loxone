@@ -1,0 +1,6 @@
+.AppleDouble*
+.DS_Store
+.idea
+node_modules/*
+!node_modules/node-lox-ws-api/
+
