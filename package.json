@@ -1,6 +1,6 @@
 {
   "name": "node-red-contrib-loxone",
-  "version": "0.10.14-iot",
+  "version": "0.10.15-iot",
   "description": "Connecting the Loxone Miniserver to node-red via Websocket API",
   "license": "MIT",
   "keywords": [
@@ -17,7 +17,7 @@
     "Dustin Utecht <dustin.utecht@codm.de> (https://www.codm.de/)"
   ],
   "dependencies": {
-    "node-lox-ws-api": "0.4.6-iot",
+    "node-lox-ws-api": "0.4.7-iot",
     "websocket": "1.0.31"
   },
   "bundledDependencies": [

@@ -2,6 +2,7 @@ module.exports = function (RED) {
     "use strict";
     const node_lox_ws_api = require("node-lox-ws-api");
     const http = require('http');
+    const https = require('https');
     const encMethods = {
         0: 'Token-Enc',
         1: 'AES-256-CBC',
@@ -64,12 +65,20 @@ module.exports = function (RED) {
             }
         }
 
-        http.get({
-                host: req.query.host,
-                port: req.query.port,
-                path: '/data/LoxAPP3.json',
-                auth: username + ':' + password,
-            }, function (http_res) {
+        // FIX HTTPS: sinds de firmware die poort 80 sluit loopt ook deze
+        // editor-helper over HTTPS (secure-vlag uit de confignode). Het
+        // Miniserver-cert staat op de cloud-DNS-naam, dus geen validatie op IP.
+        let secure = (req.query.secure === 'true');
+        let reqOptions = {
+            host: req.query.host,
+            port: req.query.port,
+            path: '/data/LoxAPP3.json',
+            auth: username + ':' + password,
+        };
+        if (secure) {
+            reqOptions.rejectUnauthorized = false;
+        }
+        (secure ? https : http).get(reqOptions, function (http_res) {
                 if (http_res.statusCode !== 200) {
                     http_res.resume();
                     res.json(result);
@@ -145,8 +154,11 @@ module.exports = function (RED) {
             return;
         }
 
+        // FIX HTTPS: de 'https://'-prefix zet node-lox-ws-api in secure-modus
+        // (https:// + wss://). Nodig sinds de Loxone-firmware die poort 80 sluit.
+        let msScheme = (config.secure === true || config.secure === 'true') ? 'https://' : 'http://';
         let client = new node_lox_ws_api(
-            config.host + ':' + config.port,
+            msScheme + config.host + ':' + config.port,
             node.credentials.username,
             node.credentials.password,
             true,

@@ -1,3 +1,10 @@
+### 0.10.15-iot
+* HTTPS/WSS-ondersteuning (`node-lox-ws-api` 0.4.7-iot): recente Loxone-firmware (o.a. 17.1) sluit poort 80 volledig en is alleen nog via HTTPS/poort 443 bereikbaar
+* Nieuwe checkbox `Use HTTPS/WSS` in de miniserver-confignode (default aan, default poort 443); een `https://`-prefix op de host zet de onderliggende lib in secure-modus (https:// voor `jdev/cfg/api` + `getPublicKey`, wss:// voor de websocket)
+* Certificaatvalidatie staat in secure-modus uit: het Miniserver-certificaat is uitgegeven op `{snr}.dns.loxonecloud.com` en matcht nooit een lokaal IP
+* Niet gepatcht: legacy `AES-256-CBC`-auth (alleen MS ≤ v8) blijft HTTP-only — op firmware ≥ 9 selecteert `API.js` sowieso Token-Enc
+* Editor-helper `struct-changed` volgt de secure-vlag; NB: firmware 17 weigert basic auth op `/data/LoxAPP3.json` (401), de runtime haalt de structuur via de geauthenticeerde websocket
+
 ### 0.10.14-iot
 * iot-experimenter fork — getest tegen Loxone Miniserver firmware 14.x (en bedoeld voor MS ≥ 10.2)
 * Vendored `node-lox-ws-api` (versie 0.4.6-iot) als bundled dependency in `./node_modules/node-lox-ws-api/` (npm's `bundledDependencies`), zodat de plugin self-contained installeerbaar is met `npm install github:iot-experimenter/node-red-contrib-loxone`

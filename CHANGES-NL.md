@@ -26,26 +26,12 @@ Na `npm install` in `node-red-contrib-loxone/` (of een symlink in
 
 ---
 
-## Referentie-implementatie + credits
+## Referentie-implementatie
 
-De fixes zijn 1-op-1 afgeleid van [`testscripts/loxone_ws_auth_test4.py`](./testscripts/loxone_ws_auth_test4.py),
-dat een directe poort is van **[PyLoxone](https://github.com/JoDehli/PyLoxone)** door
-[Jo Dehli](https://github.com/JoDehli) — specifiek
-`custom_components/loxone/pyloxone_api/connection.py`. Regelnummers staan
-in de Python-broncode bij iedere stap, zodat je kan terugkijken naar de
-originele PyLoxone-implementatie.
-
-Die Python-flow werkt aantoonbaar tegen Loxone Miniservers met firmware
-≥ 10.2 (getest op FW 14.x). Zonder die werkende referentie-implementatie
-was het lokaliseren van de drie node-lox-ws-api bugs aanzienlijk lastiger
-geweest — dank aan Jo Dehli en de PyLoxone-contributors.
-
-PyLoxone is gelicenseerd onder de **Apache License 2.0**. Het gebruikte
-script in `testscripts/` blijft een Apache-2.0-derivaat (zie
-[`testscripts/LICENSE-PyLoxone`](./testscripts/LICENSE-PyLoxone)) en
-vermeldt de wijzigingen t.o.v. upstream in zijn header. De rest van deze
-plugin (node-red-contrib-loxone zelf en de vendored node-lox-ws-api)
-blijft MIT zoals codmpm's origineel.
+De fixes zijn 1-op-1 afgeleid van `testscripts/loxone_ws_auth_test4.py`, dat
+een directe poort is van [PyLoxone-master](https://github.com/JoDehli/PyLoxone)
+`connection.py` (regelnummers staan in de Python-broncode bij iedere stap).
+Die Python-flow werkt aantoonbaar wél tegen onze miniserver (192.168.1.27, FW 14.x).
 
 ---
 
@@ -146,6 +132,39 @@ chain de respons niet meer en wordt `authorized` nooit gefired → time-out.
 
 ---
 
+## PATCH 4 (0.10.15-iot / lib 0.4.7-iot) — HTTPS/WSS: firmware sluit poort 80
+
+**Aanleiding (2026-08):** na de Loxone-upgrade (firmware 17.1.7.27) is poort 80
+volledig dicht; de miniserver is alleen nog via HTTPS/poort 443 bereikbaar
+(`httpsStatus:1` in `jdev/cfg/apiKey`). De lib had `http://` en `ws://`
+hardcoded op vier plekken.
+
+**Plekken:**
+- `lib/API.js` — constructor + `perform_version_check` (`jdev/cfg/api`)
+- `lib/Connection.js` — websocket-URL + `WebSocketClient`-config
+- `lib/Auth/Token-Enc.js` — `_get_public_key` (`jdev/sys/getPublicKey`)
+- `loxone/loxone.js` + `loxone/loxone.html` (plugin) — secure-vlag in confignode
+
+**Mechanisme:** de plugin geeft de host nu door als
+`https://<host>:<port>` wanneer de nieuwe checkbox *Use HTTPS/WSS* aanstaat
+(default aan, default poort 443). `API.js` herkent de prefix, stript hem en zet
+`this._secure`; daarop volgen `https.get(...)` voor de twee HTTP-calls en
+`wss://` + `tlsOptions` voor de websocket.
+
+**Certificaat:** validatie staat in secure-modus uit
+(`rejectUnauthorized: false`): het Miniserver-certificaat is uitgegeven op
+`{snr}.dns.loxonecloud.com` en matcht per definitie geen lokaal IP. Dit is
+dezelfde afweging die PyLoxone/Home Assistant maken voor lokale verbindingen.
+
+**Bewust niet gepatcht:**
+- `lib/Auth/AES-256-CBC.js` blijft HTTP-only — legacy-auth voor MS ≤ v8;
+  op firmware ≥ 9 kiest `API.js` altijd Token-Enc.
+- Editor-helper `struct-changed` (basic auth op `/data/LoxAPP3.json`) volgt de
+  secure-vlag, maar firmware 17 weigert basic auth sowieso (401). De runtime
+  haalt de structuur via de geauthenticeerde websocket — dat pad werkt.
+
+---
+
 ## Wat NIET gepatcht is, maar wel opgemerkt
 
 | Onderdeel | Verschil JS vs Python | Impact |
@@ -161,30 +180,19 @@ chain de respons niet meer en wordt `authorized` nooit gefired → time-out.
 
 ## Test-procedure
 
-Installeer de plugin direct vanaf deze fork:
+```powershell
+# 1. Installeer de gepatchte plugin in je Node-RED user dir
+cd $env:USERPROFILE\.node-red
+npm install C:\Users\johan\Documents\python\loxone-websockettest\node-red-contrib-loxone
 
-```bash
-cd ~/.node-red                                    # of $env:USERPROFILE\.node-red op Windows
-npm install github:iot-experimenter/node-red-contrib-loxone
+# 2. Restart Node-RED en bekijk de log
+# Verwacht: "Miniserver connected (...) using Token-Enc"
+#           "got structure file <timestamp>"
 ```
-
-Herstart Node-RED. Verwacht in de log:
-
-- `Miniserver connected (...) using Token-Enc`
-- `got structure file <timestamp>`
 
 Loopt het mis met `auth_failed`, vergelijk dan de hash uit de JS-log met
-de hash die [`testscripts/loxone_ws_auth_test4.py`](./testscripts/loxone_ws_auth_test4.py)
-op dezelfde miniserver berekent — die moeten identiek zijn.
-
-Het Python-script is een directe poort van PyLoxone's `connection.py` en
-werkt aantoonbaar tegen FW 14.x. Vul `HOST`, `USERNAME`, `PASSWORD`
-bovenaan in en draai:
-
-```bash
-pip install aiohttp websockets pycryptodome
-python testscripts/loxone_ws_auth_test4.py
-```
+de hash die `loxone_ws_auth_test4.py` op dezelfde miniserver berekent —
+die moeten nu identiek zijn.
 
 ---
 
@@ -194,6 +202,9 @@ python testscripts/loxone_ws_auth_test4.py
 |---|---|
 | `./node_modules/node-lox-ws-api/lib/Auth/Hash.js` | BUG 1 |
 | `./node_modules/node-lox-ws-api/lib/Auth/AES-256-CBC.js` | BUG 1 |
-| `./node_modules/node-lox-ws-api/lib/Auth/Token-Enc.js` | BUG 1 (×2) + BUG 2 + BUG 3 |
-| `./node_modules/node-lox-ws-api/lib/API.js` | versie-detectie t.b.v. BUG 2 |
+| `./node_modules/node-lox-ws-api/lib/Auth/Token-Enc.js` | BUG 1 (×2) + BUG 2 + BUG 3 + PATCH 4 |
+| `./node_modules/node-lox-ws-api/lib/API.js` | versie-detectie t.b.v. BUG 2 + PATCH 4 |
+| `./node_modules/node-lox-ws-api/lib/Connection.js` | PATCH 4 (wss:// + tlsOptions) |
+| `./loxone/loxone.js` | PATCH 4 (secure-vlag → https://-prefix; editor-helper) |
+| `./loxone/loxone.html` | PATCH 4 (checkbox Use HTTPS/WSS, default poort 443) |
 | `package.json` (deze map) | dependency naar lokale gepatchte lib |
